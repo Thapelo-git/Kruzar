@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
-import { AlignJustify, Bookmark, Camera, Heart, MessageSquare, Share2 } from 'lucide-react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { User, X } from 'lucide-react-native';
+import { useCallback, useState } from 'react';
 import {
-  Animated,
   FlatList,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,36 +29,7 @@ type Post = {
   saved: boolean;
 };
 
-type MomentFriend = {
-  id: string;
-  name: string;
-  isLive: boolean;
-  time: string | null;
-  colorIndex: number;
-};
-
 // ─── Mock data ────────────────────────────────────────────────────────────────
-
-const AVATAR_COLORS = [
-  '#AB47BC', '#42A5F5', '#26A69A', '#EC407A',
-  '#7E57C2', '#FFA726', '#26C6DA', '#FF7043',
-];
-
-const MOMENT_FRIENDS: MomentFriend[] = [
-  { id: '1', name: 'Ivy',    isLive: false, time: '2m',  colorIndex: 0 },
-  { id: '2', name: 'Peter',  isLive: true,  time: null,  colorIndex: 1 },
-  { id: '3', name: 'Abel',   isLive: false, time: '15m', colorIndex: 2 },
-  { id: '4', name: 'Maggy',  isLive: true,  time: null,  colorIndex: 3 },
-  { id: '5', name: 'Sipho',  isLive: false, time: 'now', colorIndex: 4 },
-  { id: '6', name: 'Pit',    isLive: false, time: '1h',  colorIndex: 5 },
-  { id: '7', name: 'Jane',   isLive: false, time: '3h',  colorIndex: 6 },
-  { id: '8', name: 'Winter', isLive: false, time: '5h',  colorIndex: 7 },
-];
-
-// Live friends appear first
-const SORTED_MOMENTS = [...MOMENT_FRIENDS].sort(
-  (a, b) => Number(b.isLive) - Number(a.isLive),
-);
 
 const MOCK_POSTS: Post[] = [
   {
@@ -87,115 +58,13 @@ const BG_COLORS = ['#E3F2FD', '#F3E5F5', '#E8F5E9', '#FFF8E1'];
 
 // ─── Live pulse ring ──────────────────────────────────────────────────────────
 
-function LivePulseRing() {
-  const scale = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(0.8)).current;
-
-  useEffect(() => {
-    const anim = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(scale,   { toValue: 1.35, duration: 700, useNativeDriver: true }),
-          Animated.timing(scale,   { toValue: 1,    duration: 700, useNativeDriver: true }),
-        ]),
-        Animated.sequence([
-          Animated.timing(opacity, { toValue: 0.2,  duration: 700, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.8,  duration: 700, useNativeDriver: true }),
-        ]),
-      ]),
-    );
-    anim.start();
-    return () => anim.stop();
-  }, []);
-
-  return (
-    <Animated.View
-      style={[styles.pulseRing, { transform: [{ scale }], opacity }]}
-    />
-  );
-}
-
-// ─── Moment bubble ────────────────────────────────────────────────────────────
-
-function MomentBubble({ friend }: { friend: MomentFriend }) {
-  const avatarBg = AVATAR_COLORS[friend.colorIndex % AVATAR_COLORS.length];
-
-  return (
-    <Pressable
-      style={styles.momentItem}
-      onPress={() =>
-        router.navigate({
-          pathname: '/moment-viewer',
-          params: {
-            username: friend.name,
-            colorIndex: friend.colorIndex.toString(),
-            isLive: friend.isLive ? '1' : '0',
-          },
-        })
-      }>
-      <View style={styles.momentRingWrapper}>
-        {friend.isLive && <LivePulseRing />}
-        <View style={[styles.momentRing, friend.isLive ? styles.momentRingLive : styles.momentRingNormal]}>
-          <View style={[styles.momentAvatar, { backgroundColor: avatarBg }]}>
-            <Text style={styles.momentInitial}>{friend.name[0]}</Text>
-          </View>
-        </View>
-        {friend.isLive && (
-          <View style={styles.liveBadge}>
-            <Text style={styles.liveBadgeText}>LIVE</Text>
-          </View>
-        )}
-      </View>
-      <Text style={styles.momentName} numberOfLines={1}>{friend.name}</Text>
-      {!friend.isLive && (
-        <Text style={styles.momentTime}>{friend.time}</Text>
-      )}
-    </Pressable>
-  );
-}
-
-// ─── Moments strip ────────────────────────────────────────────────────────────
-
-type StripItem =
-  | { kind: 'add'; id: string }
-  | (MomentFriend & { kind: 'friend' });
-
-const STRIP_DATA: StripItem[] = [
-  { kind: 'add', id: 'add' },
-  ...SORTED_MOMENTS.map((f) => ({ ...f, kind: 'friend' as const })),
-];
-
-function MomentsStrip() {
-  return (
-    <View style={styles.momentsStrip}>
-      <FlatList<StripItem>
-        horizontal
-        data={STRIP_DATA}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.momentsContent}
-        renderItem={({ item }) => {
-          if (item.kind === 'add') {
-            return (
-              <Pressable style={styles.momentItem} onPress={() => router.navigate('/add')}>
-                <View style={styles.addStoryCircle}>
-                  <Camera size={22} color="#FFFFFF" strokeWidth={1.75} />
-                  <View style={styles.addStoryPlus}>
-                    <Text style={styles.addStoryPlusText}>+</Text>
-                  </View>
-                </View>
-                <Text style={styles.momentName}>Your Story</Text>
-              </Pressable>
-            );
-          }
-          return <MomentBubble friend={item} />;
-        }}
-      />
-    </View>
-  );
-}
-
 // ─── Post card ────────────────────────────────────────────────────────────────
+
+const MOCK_COMMENTS: { id: string; user: string; text: string }[] = [
+  { id: '1', user: 'Ivy',   text: 'This is amazing 🔥' },
+  { id: '2', user: 'Abel',  text: 'Love it!' },
+  { id: '3', user: 'Sipho', text: 'Great content 👏' },
+];
 
 function PostCard({
   item,
@@ -210,81 +79,113 @@ function PostCard({
   onSave: () => void;
   bgColor: string;
 }) {
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+
   return (
     <View style={[styles.post, { height }]}>
       <View style={[styles.contentArea, { backgroundColor: bgColor }]} />
 
+      {/* Action pills — top, no avatar */}
       <View style={styles.topActions}>
-        <Pressable onPress={onLike} style={styles.actionBtn}>
-          <Heart
-            size={22}
-            color={item.liked ? Brand.red : '#333333'}
-            fill={item.liked ? Brand.red : 'none'}
-            strokeWidth={2}
-          />
-          <Text style={[styles.actionCount, item.liked && styles.actionCountLiked]}>
-            {item.likes}
+        <Pressable onPress={onLike} style={[styles.actionBtn, item.liked && styles.actionBtnLiked]}>
+          <Text style={[styles.actionLabel, item.liked && styles.actionLabelLiked]}>
+            Like{item.likes > 0 ? ` ${item.likes}` : ''}
+          </Text>
+        </Pressable>
+
+        <Pressable style={styles.actionBtn} onPress={() => setShowComments(true)}>
+          <Text style={styles.actionLabel}>Comment{item.comments > 0 ? ` ${item.comments}` : ''}</Text>
+        </Pressable>
+
+        <Pressable onPress={onSave} style={[styles.actionBtn, item.saved && styles.actionBtnSaved]}>
+          <Text style={[styles.actionLabel, item.saved && styles.actionLabelSaved]}>
+            Save{item.saves > 0 ? ` ${item.saves}` : ''}
           </Text>
         </Pressable>
 
         <Pressable style={styles.actionBtn}>
-          <MessageSquare size={22} color="#333333" strokeWidth={2} />
-          <Text style={styles.actionCount}>{item.comments}</Text>
+          <Text style={styles.actionLabel}>Share{item.shares > 0 ? ` ${item.shares}` : ''}</Text>
         </Pressable>
+      </View>
 
-        <Pressable onPress={onSave} style={styles.actionBtn}>
-          <Bookmark
-            size={22}
-            color={item.saved ? Brand.cyan : '#333333'}
-            fill={item.saved ? Brand.cyan : 'none'}
-            strokeWidth={2}
-          />
-          <Text style={[styles.actionCount, item.saved && styles.actionCountSaved]}>
-            {item.saves}
-          </Text>
-        </Pressable>
-
-        <Pressable style={styles.actionBtn}>
-          <Share2 size={22} color="#333333" strokeWidth={2} />
-          <Text style={styles.actionCount}>{item.shares}</Text>
-        </Pressable>
-
-        {/* Creator avatar */}
-        <Pressable style={styles.avatarArea} onPress={() => router.navigate('/profile')}>
-          <View style={styles.avatarWrapper}>
-            <View style={styles.dashedRing}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarInitial}>{item.username[0]}</Text>
-              </View>
-            </View>
-            {item.momentCount > 0 && (
-              <View style={styles.momentBadge}>
-                <Text style={styles.momentBadgeText}>{item.momentCount}</Text>
+      {/* Bottom info + avatar on right */}
+      <View style={styles.postInfo}>
+        <View style={styles.postInfoLeft}>
+          <View style={styles.postInfoTop}>
+            <Text style={styles.username}>{item.username}</Text>
+            {item.isLive && (
+              <View style={styles.liveChip}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveChipText}>LIVE</Text>
               </View>
             )}
           </View>
-          <View style={styles.followBtn}>
-            <Text style={styles.followBtnText}>+</Text>
+          <Text style={styles.caption}>{item.caption}</Text>
+          <Text style={styles.stats}>
+            {item.likes}L · {item.comments}C · {item.saves}S · {item.shares}Sh
+          </Text>
+        </View>
+
+        {/* Avatar — + badge if no moments, count badge if has moments */}
+        <Pressable style={styles.avatarWrapper} onPress={() => router.navigate('/profile')}>
+          <View style={styles.dashedRing}>
+            <View style={styles.avatar}>
+              <User size={24} color="#FFFFFF" strokeWidth={1.75} />
+            </View>
           </View>
-          <AlignJustify size={22} color={Brand.cyan} strokeWidth={2.5} />
+          {item.momentCount === 0 ? (
+            <View style={styles.followBadge}>
+              <Text style={styles.followBadgeText}>+</Text>
+            </View>
+          ) : (
+            <View style={styles.momentBadge}>
+              <Text style={styles.momentBadgeText}>{item.momentCount}</Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
-      <View style={styles.postInfo}>
-        <View style={styles.postInfoTop}>
-          <Text style={styles.username}>{item.username}</Text>
-          {item.isLive && (
-            <View style={styles.liveChip}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveChipText}>LIVE</Text>
+      {/* Comment sheet */}
+      {showComments && (
+        <View style={styles.commentSheet}>
+          <View style={styles.commentSheetHeader}>
+            <Text style={styles.commentSheetTitle}>Comments</Text>
+            <Pressable onPress={() => setShowComments(false)}>
+              <X size={20} color="#333333" strokeWidth={2.5} />
+            </Pressable>
+          </View>
+
+          {MOCK_COMMENTS.map((c) => (
+            <View key={c.id} style={styles.commentRow}>
+              <View style={styles.commentAvatar}>
+                <Text style={styles.commentAvatarText}>{c.user[0]}</Text>
+              </View>
+              <View style={styles.commentBody}>
+                <Text style={styles.commentUser}>{c.user}</Text>
+                <Text style={styles.commentText}>{c.text}</Text>
+              </View>
             </View>
-          )}
+          ))}
+
+          <View style={styles.commentInputRow}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Add a comment..."
+              placeholderTextColor="#9E9E9E"
+              value={commentText}
+              onChangeText={setCommentText}
+              returnKeyType="send"
+            />
+            <Pressable
+              style={[styles.commentSendBtn, !commentText.trim() && { opacity: 0.4 }]}
+              onPress={() => setCommentText('')}
+              disabled={!commentText.trim()}>
+              <Text style={styles.commentSendText}>Post</Text>
+            </Pressable>
+          </View>
         </View>
-        <Text style={styles.caption}>{item.caption}</Text>
-        <Text style={styles.stats}>
-          {item.likes}L · {item.comments}C · {item.saves}S · {item.shares}Sh
-        </Text>
-      </View>
+      )}
     </View>
   );
 }
@@ -318,10 +219,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Stories row */}
-      <MomentsStrip />
-
-      {/* Paging post feed — measured separately so it fills exactly the remaining space */}
+      {/* Paging post feed */}
       <View
         style={styles.feedContainer}
         onLayout={(e) => setFeedHeight(e.nativeEvent.layout.height)}>
@@ -357,121 +255,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  // Moments strip
-  momentsStrip: {
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#EEEEEE',
-    paddingVertical: 6,
-  },
-  momentsContent: {
-    paddingHorizontal: 10,
-    alignItems: 'flex-start',
-    gap: 2,
-  },
-  momentItem: {
-    alignItems: 'center',
-    width: 68,
-    paddingHorizontal: 2,
-    gap: 4,
-  },
-  momentRingWrapper: {
-    position: 'relative',
-    width: 62,
-    height: 62,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    backgroundColor: Brand.red,
-  },
-  momentRing: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  momentRingLive: {
-    borderColor: Brand.red,
-  },
-  momentRingNormal: {
-    borderColor: Brand.cyan,
-  },
-  momentAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  momentInitial: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  liveBadge: {
-    position: 'absolute',
-    bottom: 0,
-    backgroundColor: Brand.red,
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  liveBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  momentName: {
-    fontSize: 10,
-    color: '#333333',
-    textAlign: 'center',
-    width: 64,
-    fontWeight: '500',
-  },
-  momentTime: {
-    fontSize: 9,
-    color: '#9E9E9E',
-    textAlign: 'center',
-  },
-  addStoryCircle: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: Brand.cyanDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  addStoryPlus: {
-    position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: Brand.cyan,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addStoryPlusText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 15,
-  },
-
   // Feed
   feedContainer: {
     flex: 1,
@@ -496,28 +279,35 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   actionBtn: {
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.75)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
-  actionCount: {
-    fontSize: 12,
+  actionBtnLiked: {
+    backgroundColor: 'rgba(229,57,53,0.12)',
+    borderColor: Brand.red,
+  },
+  actionBtnSaved: {
+    backgroundColor: 'rgba(0,188,212,0.12)',
+    borderColor: Brand.cyan,
+  },
+  actionLabel: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#333333',
   },
-  actionCountLiked: {
+  actionLabelLiked: {
     color: Brand.red,
   },
-  actionCountSaved: {
+  actionLabelSaved: {
     color: Brand.cyan,
-  },
-  avatarArea: {
-    marginLeft: 'auto',
-    alignItems: 'center',
-    gap: 8,
   },
   avatarWrapper: {
     position: 'relative',
+    alignItems: 'center',
   },
   dashedRing: {
     width: 58,
@@ -561,19 +351,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
   },
-  followBtn: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: Brand.red,
+  followBadge: {
+    position: 'absolute',
+    bottom: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Brand.cyan,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  followBtnText: {
+  followBadgeText: {
     color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '700',
-    lineHeight: 24,
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 18,
   },
 
   // Post info bar
@@ -582,9 +376,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: 'rgba(255,255,255,0.93)',
+    gap: 12,
+  },
+  postInfoLeft: {
+    flex: 1,
     gap: 3,
   },
   postInfoTop: {
@@ -627,5 +427,98 @@ const styles = StyleSheet.create({
     color: '#9E9E9E',
     letterSpacing: 0.2,
     marginTop: 2,
+  },
+
+  // Comment sheet
+  commentSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+    gap: 12,
+    zIndex: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  commentSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  commentSheetTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  commentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  commentAvatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Brand.cyan,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commentAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  commentBody: {
+    flex: 1,
+    gap: 2,
+  },
+  commentUser: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  commentText: {
+    fontSize: 13,
+    color: '#444444',
+    lineHeight: 18,
+  },
+  commentInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#EEEEEE',
+    paddingTop: 12,
+  },
+  commentInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 14,
+    fontSize: 14,
+    color: '#000000',
+  },
+  commentSendBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: Brand.cyan,
+  },
+  commentSendText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
