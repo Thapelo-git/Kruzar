@@ -90,22 +90,20 @@ function PostCard({
       <View style={styles.topActions}>
         <Pressable onPress={onLike} style={[styles.actionBtn, item.liked && styles.actionBtnLiked]}>
           <Text style={[styles.actionLabel, item.liked && styles.actionLabelLiked]}>
-            Like{item.likes > 0 ? ` ${item.likes}` : ''}
+            {item.liked ? 'Liked' : 'Like'}
           </Text>
         </Pressable>
 
         <Pressable style={styles.actionBtn} onPress={() => setShowComments(true)}>
-          <Text style={styles.actionLabel}>Comment{item.comments > 0 ? ` ${item.comments}` : ''}</Text>
+          <Text style={styles.actionLabel}>Comment</Text>
         </Pressable>
 
         <Pressable onPress={onSave} style={[styles.actionBtn, item.saved && styles.actionBtnSaved]}>
-          <Text style={[styles.actionLabel, item.saved && styles.actionLabelSaved]}>
-            Save{item.saves > 0 ? ` ${item.saves}` : ''}
-          </Text>
+          <Text style={[styles.actionLabel, item.saved && styles.actionLabelSaved]}>Save</Text>
         </Pressable>
 
         <Pressable style={styles.actionBtn}>
-          <Text style={styles.actionLabel}>Share{item.shares > 0 ? ` ${item.shares}` : ''}</Text>
+          <Text style={styles.actionLabel}>Share</Text>
         </Pressable>
       </View>
 
@@ -281,29 +279,24 @@ const styles = StyleSheet.create({
   actionBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.75)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
   },
-  actionBtnLiked: {
-    backgroundColor: 'rgba(229,57,53,0.12)',
-    borderColor: Brand.red,
-  },
-  actionBtnSaved: {
-    backgroundColor: 'rgba(0,188,212,0.12)',
-    borderColor: Brand.cyan,
-  },
+  actionBtnLiked: {},
+  actionBtnSaved: {},
   actionLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333333',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   actionLabelLiked: {
-    color: Brand.red,
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   actionLabelSaved: {
-    color: Brand.cyan,
+    color: '#FFFFFF',
+    fontWeight: '800',
   },
   avatarWrapper: {
     position: 'relative',
@@ -370,22 +363,22 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Post info bar
+  // Post info bar — overlaid on full-screen content
   postInfo: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: 'rgba(255,255,255,0.93)',
+    paddingBottom: 24,
+    paddingTop: 60,
     gap: 12,
   },
   postInfoLeft: {
     flex: 1,
-    gap: 3,
+    gap: 4,
   },
   postInfoTop: {
     flexDirection: 'row',
@@ -394,8 +387,11 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 17,
-    fontWeight: '700',
-    color: '#000000',
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   liveChip: {
     flexDirection: 'row',
@@ -420,11 +416,14 @@ const styles = StyleSheet.create({
   },
   caption: {
     fontSize: 14,
-    color: '#555555',
+    color: 'rgba(255,255,255,0.9)',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   stats: {
     fontSize: 12,
-    color: '#9E9E9E',
+    color: 'rgba(255,255,255,0.7)',
     letterSpacing: 0.2,
     marginTop: 2,
   },
