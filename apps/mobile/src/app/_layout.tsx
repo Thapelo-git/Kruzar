@@ -3,10 +3,12 @@ import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { RamatsomaTabBar } from '@/components/ramatsoma-tab-bar';
+import { PostsProvider } from '@/context/PostsContext';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   return (
+    <PostsProvider>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
       <Tabs
@@ -24,5 +26,6 @@ export default function TabLayout() {
         <Tabs.Screen name="moment-viewer" options={{ href: null }} />
       </Tabs>
     </ThemeProvider>
+    </PostsProvider>
   );
 }

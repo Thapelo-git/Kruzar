@@ -1,4 +1,5 @@
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
+import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { Check, Images, SwitchCamera, X, Zap, ZapOff } from 'lucide-react-native';
@@ -9,11 +10,13 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Brand } from '@/constants/theme';
+import { usePosts } from '@/context/PostsContext';
 
 function formatSeconds(s: number) {
   const mins = Math.floor(s / 60);
@@ -23,6 +26,7 @@ function formatSeconds(s: number) {
 
 export default function AddScreen() {
   const insets = useSafeAreaInsets();
+  const { addPost } = usePosts();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
@@ -32,6 +36,8 @@ export default function AddScreen() {
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [capturedIsVideo, setCapturedIsVideo] = useState(false);
+  const [caption, setCaption] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cameraRef = useRef<any>(null);
@@ -146,10 +152,26 @@ export default function AddScreen() {
     setCapturedIsVideo(false);
   };
 
-  const postMoment = () => {
-    Alert.alert('Moment Posted!', 'Your moment is now live for your friends to see.', [
-      { text: 'Great!', onPress: () => router.back() },
-    ]);
+  const postMoment = async () => {
+    if (!capturedUri || isPosting) return;
+    setIsPosting(true);
+    try {
+      // Save to permanent storage
+      const dir = FileSystem.documentDirectory + 'moments/';
+      await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      const ext = capturedIsVideo ? 'mp4' : 'jpg';
+      const dest = dir + Date.now() + '.' + ext;
+      await FileSystem.copyAsync({ from: capturedUri, to: dest });
+
+      // Push to feed
+      addPost({ uri: dest, isVideo: capturedIsVideo, caption: caption.trim() || 'New moment', username: 'You' });
+
+      router.back();
+    } catch {
+      Alert.alert('Error', 'Could not save your moment. Please try again.');
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   // ── Preview screen (after capture) ──────────────────────────────────────────
@@ -170,15 +192,28 @@ export default function AddScreen() {
           <X size={18} color="#FFFFFF" strokeWidth={2.5} />
         </Pressable>
 
+        {/* Caption input */}
+        <View style={[styles.captionRow, { top: insets.top + 60 }]}>
+          <TextInput
+            style={styles.captionInput}
+            placeholder="Add a caption..."
+            placeholderTextColor="rgba(255,255,255,0.6)"
+            value={caption}
+            onChangeText={setCaption}
+            returnKeyType="done"
+            multiline
+          />
+        </View>
+
         {/* Bottom actions */}
         <View style={[styles.previewActions, { paddingBottom: insets.bottom + 24 }]}>
           <Pressable style={styles.retakeBtn} onPress={retake}>
             <X size={18} color="#FFFFFF" strokeWidth={2.5} />
             <Text style={styles.retakeBtnText}>Retake</Text>
           </Pressable>
-          <Pressable style={styles.postBtn} onPress={postMoment}>
-            <Text style={styles.postBtnText}>Post Moment</Text>
-            <Check size={18} color="#FFFFFF" strokeWidth={2.5} />
+          <Pressable style={[styles.postBtn, isPosting && { opacity: 0.6 }]} onPress={postMoment} disabled={isPosting}>
+            <Text style={styles.postBtnText}>{isPosting ? 'Posting...' : 'Post Moment'}</Text>
+            {!isPosting && <Check size={18} color="#FFFFFF" strokeWidth={2.5} />}
           </Pressable>
         </View>
       </View>
@@ -499,6 +534,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
+  },
+  captionRow: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 10,
+  },
+  captionInput: {
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: '#FFFFFF',
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   videoBadge: {
     position: 'absolute',

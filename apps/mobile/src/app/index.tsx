@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { User, X } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -12,11 +13,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Brand } from '@/constants/theme';
+import { usePosts } from '@/context/PostsContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Post = {
   id: string;
+  uri?: string;
   username: string;
   caption: string;
   likes: number;
@@ -84,7 +87,11 @@ function PostCard({
 
   return (
     <View style={[styles.post, { height }]}>
-      <View style={[styles.contentArea, { backgroundColor: bgColor }]} />
+      {item.uri ? (
+        <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      ) : (
+        <View style={[styles.contentArea, { backgroundColor: bgColor }]} />
+      )}
 
       {/* Top row: actions LEFT + avatar RIGHT */}
       <View style={styles.topRow}>
@@ -188,28 +195,41 @@ function PostCard({
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const [posts, setPosts] = useState(MOCK_POSTS);
+  const { userPosts, toggleLike: ctxToggleLike, toggleSave: ctxToggleSave } = usePosts();
+  const [mockPosts, setMockPosts] = useState<Post[]>(MOCK_POSTS);
   const [feedHeight, setFeedHeight] = useState(0);
 
-  const toggleLike = useCallback((id: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 }
-          : p,
-      ),
-    );
-  }, []);
+  // User's captured posts at top, then mock posts
+  const allPosts = useMemo<Post[]>(
+    () => [...(userPosts as Post[]), ...mockPosts],
+    [userPosts, mockPosts],
+  );
 
-  const toggleSave = useCallback((id: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, saved: !p.saved, saves: p.saved ? p.saves - 1 : p.saves + 1 }
-          : p,
-      ),
-    );
-  }, []);
+  const userPostIds = useMemo(() => new Set(userPosts.map((p) => p.id)), [userPosts]);
+
+  const handleLike = useCallback((id: string) => {
+    if (userPostIds.has(id)) {
+      ctxToggleLike(id);
+    } else {
+      setMockPosts((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, liked: !p.liked, likes: p.liked ? p.likes - 1 : p.likes + 1 } : p,
+        ),
+      );
+    }
+  }, [userPostIds, ctxToggleLike]);
+
+  const handleSave = useCallback((id: string) => {
+    if (userPostIds.has(id)) {
+      ctxToggleSave(id);
+    } else {
+      setMockPosts((prev) =>
+        prev.map((p) =>
+          p.id === id ? { ...p, saved: !p.saved, saves: p.saved ? p.saves - 1 : p.saves + 1 } : p,
+        ),
+      );
+    }
+  }, [userPostIds, ctxToggleSave]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -219,7 +239,7 @@ export default function HomeScreen() {
         onLayout={(e) => setFeedHeight(e.nativeEvent.layout.height)}>
         {feedHeight > 0 && (
           <FlatList
-            data={posts}
+            data={allPosts}
             keyExtractor={(item) => item.id}
             pagingEnabled
             showsVerticalScrollIndicator={false}
@@ -230,8 +250,8 @@ export default function HomeScreen() {
                 item={item}
                 height={feedHeight}
                 bgColor={BG_COLORS[index % BG_COLORS.length]}
-                onLike={() => toggleLike(item.id)}
-                onSave={() => toggleSave(item.id)}
+                onLike={() => handleLike(item.id)}
+                onSave={() => handleSave(item.id)}
               />
             )}
           />
