@@ -86,62 +86,58 @@ function PostCard({
     <View style={[styles.post, { height }]}>
       <View style={[styles.contentArea, { backgroundColor: bgColor }]} />
 
-      {/* Action pills — top, no avatar */}
-      <View style={styles.topActions}>
-        <Pressable onPress={onLike} style={[styles.actionBtn, item.liked && styles.actionBtnLiked]}>
-          <Text style={[styles.actionLabel, item.liked && styles.actionLabelLiked]}>
-            {item.liked ? 'Liked' : 'Like'}
-          </Text>
-        </Pressable>
-
-        <Pressable style={styles.actionBtn} onPress={() => setShowComments(true)}>
-          <Text style={styles.actionLabel}>Comment</Text>
-        </Pressable>
-
-        <Pressable onPress={onSave} style={[styles.actionBtn, item.saved && styles.actionBtnSaved]}>
-          <Text style={[styles.actionLabel, item.saved && styles.actionLabelSaved]}>Save</Text>
-        </Pressable>
-
-        <Pressable style={styles.actionBtn}>
-          <Text style={styles.actionLabel}>Share</Text>
-        </Pressable>
-      </View>
-
-      {/* Bottom info + avatar on right */}
-      <View style={styles.postInfo}>
-        <View style={styles.postInfoLeft}>
-          <View style={styles.postInfoTop}>
-            <Text style={styles.username}>{item.username}</Text>
-            {item.isLive && (
-              <View style={styles.liveChip}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveChipText}>LIVE</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.caption}>{item.caption}</Text>
-          <Text style={styles.stats}>
-            {item.likes}L · {item.comments}C · {item.saves}S · {item.shares}Sh
-          </Text>
+      {/* Top row: actions LEFT + avatar RIGHT */}
+      <View style={styles.topRow}>
+        {/* Action labels */}
+        <View style={styles.topActions}>
+          <Pressable onPress={onLike} style={styles.actionBtn}>
+            <Text style={[styles.actionLabel, item.liked && styles.actionLabelLiked]}>
+              {item.liked ? 'Liked' : 'Like'}
+            </Text>
+          </Pressable>
+          <Pressable style={styles.actionBtn} onPress={() => setShowComments(true)}>
+            <Text style={styles.actionLabel}>Comment</Text>
+          </Pressable>
+          <Pressable onPress={onSave} style={styles.actionBtn}>
+            <Text style={[styles.actionLabel, item.saved && styles.actionLabelSaved]}>Save</Text>
+          </Pressable>
+          <Pressable style={styles.actionBtn}>
+            <Text style={styles.actionLabel}>Share</Text>
+          </Pressable>
         </View>
 
-        {/* Avatar — + badge if no moments, count badge if has moments */}
+        {/* Avatar — top right */}
         <Pressable style={styles.avatarWrapper} onPress={() => router.navigate('/profile')}>
-          <View style={styles.dashedRing}>
-            <View style={styles.avatar}>
-              <User size={24} color="#FFFFFF" strokeWidth={1.75} />
-            </View>
-          </View>
-          {item.momentCount === 0 ? (
-            <View style={styles.followBadge}>
-              <Text style={styles.followBadgeText}>+</Text>
-            </View>
-          ) : (
+          {item.momentCount > 0 && (
             <View style={styles.momentBadge}>
               <Text style={styles.momentBadgeText}>{item.momentCount}</Text>
             </View>
           )}
+          <View style={styles.dashedRing}>
+            <View style={styles.avatar}>
+              <User size={22} color="#FFFFFF" strokeWidth={1.75} />
+            </View>
+          </View>
+          <View style={styles.followBadge}>
+            <Text style={styles.followBadgeText}>+</Text>
+          </View>
         </Pressable>
+      </View>
+
+      {/* Bottom: username + caption + stats LEFT, LIVE badge RIGHT */}
+      <View style={styles.postInfo}>
+        <View style={styles.postInfoLeft}>
+          <Text style={styles.username}>@{item.username}</Text>
+          <Text style={styles.caption}>{item.caption}</Text>
+          <Text style={styles.stats}>
+            {item.likes}L . {item.comments}C . {item.saves}S . {item.shares}S
+          </Text>
+        </View>
+        {item.isLive && (
+          <View style={styles.liveChip}>
+            <Text style={styles.liveChipText}>LIVE</Text>
+          </View>
+        )}
       </View>
 
       {/* Comment sheet */}
@@ -268,67 +264,78 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  topActions: {
+  // Top row
+  topRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
     paddingTop: 14,
-    gap: 16,
     zIndex: 10,
   },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    flexWrap: 'wrap',
+  },
   actionBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   actionBtnLiked: {},
   actionBtnSaved: {},
   actionLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    textShadowRadius: 4,
   },
   actionLabelLiked: {
-    color: '#FFFFFF',
     fontWeight: '800',
   },
   actionLabelSaved: {
-    color: '#FFFFFF',
     fontWeight: '800',
   },
+
+  // Avatar — top right
   avatarWrapper: {
-    position: 'relative',
     alignItems: 'center',
+    marginLeft: 8,
   },
   dashedRing: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     borderWidth: 2,
-    borderColor: Brand.cyan,
-    borderStyle: 'dashed',
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: '#37474F',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInitial: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
   },
   momentBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: -4,
+    right: -4,
     backgroundColor: Brand.red,
     borderRadius: 10,
     minWidth: 20,
@@ -338,6 +345,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
+    zIndex: 1,
   },
   momentBadgeText: {
     color: '#FFFFFF',
@@ -345,25 +353,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   followBadge: {
-    position: 'absolute',
-    bottom: -4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Brand.cyan,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Brand.red,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 4,
   },
   followBadgeText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
-    lineHeight: 18,
+    lineHeight: 20,
   },
 
-  // Post info bar — overlaid on full-screen content
+  // Post info — bottom overlay
   postInfo: {
     position: 'absolute',
     bottom: 0,
@@ -371,14 +378,16 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     alignItems: 'flex-end',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 24,
-    paddingTop: 60,
-    gap: 12,
+    paddingTop: 80,
+    zIndex: 10,
   },
   postInfoLeft: {
     flex: 1,
     gap: 4,
+    marginRight: 12,
   },
   postInfoTop: {
     flexDirection: 'row',
@@ -386,21 +395,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   username: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   liveChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: Brand.red,
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    gap: 4,
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 2,
   },
   liveDot: {
     width: 6,
@@ -410,21 +417,21 @@ const styles = StyleSheet.create({
   },
   liveChipText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   caption: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    textShadowColor: 'rgba(0,0,0,0.3)',
+    color: 'rgba(255,255,255,0.95)',
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
   stats: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 0.2,
+    color: 'rgba(255,255,255,0.8)',
+    letterSpacing: 0.3,
     marginTop: 2,
   },
 
